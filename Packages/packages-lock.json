@@ -253,9 +253,9 @@
       "url": "https://packages.unity.com"
     },
     "com.varjo.xr": {
-      "version": "file:C:/Users/Innovative_students/Desktop/New folder/VarjoUnityXRPlugin-master",
+      "version": "file:VarjoUnityXRPlugin-master",
       "depth": 0,
-      "source": "local",
+      "source": "embedded",
       "dependencies": {
         "com.unity.xr.management": "4.4.0",
         "com.unity.xr.arfoundation": "5.1.3"
