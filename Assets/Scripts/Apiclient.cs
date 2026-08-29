@@ -22,6 +22,7 @@ public class APIClient : MonoBehaviour
     public int coldStartTimeoutSeconds = 90;
     public int normalTimeoutSeconds = 20;
     private bool firstRequestSent = false;
+    private Coroutine activeRequestCoroutine;
 
     private SubtitleDisplay subtitleDisplay;
 
@@ -44,7 +45,7 @@ public class APIClient : MonoBehaviour
             return;
         }
 
-        StartCoroutine(PostAudio(pcmBytes));
+        activeRequestCoroutine = StartCoroutine(PostAudio(pcmBytes));
     }
 
     private IEnumerator PostAudio(byte[] pcmBytes)
@@ -74,6 +75,8 @@ public class APIClient : MonoBehaviour
             Debug.LogError("API Error: " + request.error);
             subtitleDisplay?.ShowError("Connection failed: " + request.error);
         }
+
+        activeRequestCoroutine = null;
     }
 
     private void ParseAndDisplay(string json)
@@ -98,6 +101,22 @@ public class APIClient : MonoBehaviour
             Debug.LogError("JSON parse error: " + e.Message);
             Debug.LogError("Raw response was: " + json);
         }
+    }
+
+    // Called from SceneTransition before switching scenes. Cancels any
+    // in-flight request so a late server response can't call into a
+    // display that's about to be reset / unloaded.
+    public void ResetSession()
+    {
+        if (activeRequestCoroutine != null)
+        {
+            StopCoroutine(activeRequestCoroutine);
+            activeRequestCoroutine = null;
+        }
+
+        // firstRequestSent is intentionally NOT reset here — the server-side
+        // model is already warmed up, so the next person doesn't need the
+        // long cold-start timeout again.
     }
 
     private void SimulateMockResponse()
