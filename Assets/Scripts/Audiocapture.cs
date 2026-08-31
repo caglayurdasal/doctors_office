@@ -64,6 +64,16 @@ public class AudioCapture : MonoBehaviour
             return;
         }
 
+        // Safety net: Microphone state survives scene loads. If a previous
+        // session's recording was never cleanly stopped, force-stop it here
+        // so Microphone.Start() below actually starts a fresh recording
+        // instead of silently returning the still-running old clip.
+        if (Microphone.IsRecording(micDevice))
+        {
+            Debug.LogWarning("Mic was already recording from a previous session — forcing stop.");
+            Microphone.End(micDevice);
+        }
+
         Debug.Log("Recording started (will auto-stop on silence)...");
         isRecording = true;
         silenceTimer = 0f;
@@ -187,5 +197,30 @@ public class AudioCapture : MonoBehaviour
         }
 
         return pcmBytes;
+    }
+
+        // Called from SceneTransition before switching scenes, to make sure this
+    // session doesn't leak into the next room / next person.
+    public void ResetSession()
+    {
+        if (monitorCoroutine != null)
+        {
+            StopCoroutine(monitorCoroutine);
+            monitorCoroutine = null;
+        }
+
+        // Microphone state is not tied to the scene/GameObject lifecycle,
+        // so it must be stopped explicitly or it keeps recording after
+        // this scene unloads.
+        if (Microphone.IsRecording(micDevice))
+            Microphone.End(micDevice);
+
+        isRecording = false;
+        silenceTimer = 0f;
+        speechTimer = 0f;
+        hasSpoken = false;
+        elapsedTime = 0f;
+        lastSamplePos = 0;
+        micClip = null;
     }
 }
