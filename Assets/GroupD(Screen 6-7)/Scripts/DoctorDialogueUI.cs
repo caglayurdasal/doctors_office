@@ -31,36 +31,37 @@ public class DoctorDialogueUI : MonoBehaviour
     public GameObject currentScreenCanvas;
     public GameObject nextScreenCanvas;
 
-    void Start()
+    void OnEnable()
     {
         AutoAssignReferences();
 
-        if (replayButton != null) replayButton.onClick.AddListener(OnReplayClicked);
-        if (slowButton != null) slowButton.onClick.AddListener(OnSlowClicked);
-        if (hintButton != null) hintButton.onClick.AddListener(OnHintClicked);
-        if (confirmButton != null) confirmButton.onClick.AddListener(OnConfirmClicked);
-        if (helpButton != null) helpButton.onClick.AddListener(ToggleHelpPanel);
+        if (replayButton != null) { replayButton.onClick.RemoveAllListeners(); replayButton.onClick.AddListener(OnReplayClicked); }
+        if (slowButton != null) { slowButton.onClick.RemoveAllListeners(); slowButton.onClick.AddListener(OnSlowClicked); }
+        if (hintButton != null) { hintButton.onClick.RemoveAllListeners(); hintButton.onClick.AddListener(OnHintClicked); }
+        if (confirmButton != null) { confirmButton.onClick.RemoveAllListeners(); confirmButton.onClick.AddListener(OnConfirmClicked); }
+        if (helpButton != null) { helpButton.onClick.RemoveAllListeners(); helpButton.onClick.AddListener(ToggleHelpPanel); }
     }
 
     private void AutoAssignReferences()
     {
-        if (replayButton == null)
-            replayButton = GameObject.Find("ReplayBox")?.GetComponent<Button>();
-
-        if (slowButton == null)
-            slowButton = GameObject.Find("Slow Box")?.GetComponent<Button>();
-
-        if (hintButton == null)
-            hintButton = GameObject.Find("Hint Box")?.GetComponent<Button>();
-
-        if (confirmButton == null)
-            confirmButton = GameObject.Find("Confirm Box")?.GetComponent<Button>();
-
-        if (helpButton == null)
-            helpButton = GameObject.Find("HelpButton")?.GetComponent<Button>();
+        if (replayButton == null) replayButton = GameObject.Find("ReplayBox")?.GetComponent<Button>();
+        if (slowButton == null) slowButton = GameObject.Find("Slow Box")?.GetComponent<Button>();
+        if (hintButton == null) hintButton = GameObject.Find("Hint Box")?.GetComponent<Button>();
+        if (confirmButton == null) confirmButton = GameObject.Find("Confirm Box")?.GetComponent<Button>();
+        if (helpButton == null) helpButton = transform.Find("HelpButton")?.GetComponent<Button>();
 
         if (helpPanel == null)
-            helpPanel = GameObject.Find("HelpPanel");
+        {
+            Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+            foreach (Transform t in allTransforms)
+            {
+                if (t.name == "MainPanel")
+                {
+                    helpPanel = t.gameObject;
+                    break;
+                }
+            }
+        }
 
         if (currentScreenCanvas == null)
         {
@@ -70,7 +71,6 @@ public class DoctorDialogueUI : MonoBehaviour
 
         if (nextScreenCanvas == null)
         {
-            
             Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
             foreach (Transform t in allTransforms)
             {
@@ -83,43 +83,27 @@ public class DoctorDialogueUI : MonoBehaviour
         }
     }
 
-    public void UpdateDialogueUI(string docGerman, string docEnglish, string userText, string scoreVal, string feedbackVal)
-    {
-        if (doctorGermanText != null) doctorGermanText.text = docGerman;
-        if (doctorEnglishText != null) doctorEnglishText.text = docEnglish;
-        if (userTranscribedText != null) userTranscribedText.text = "\"" + userText + "\"";
-        if (scoreText != null) scoreText.text = scoreVal + "%";
-        if (scoreFeedbackText != null) scoreFeedbackText.text = feedbackVal;
-    }
-
     public void ToggleHelpPanel()
     {
+        if (helpPanel == null) AutoAssignReferences();
+
         if (helpPanel != null)
         {
             bool isActive = helpPanel.activeSelf;
             helpPanel.SetActive(!isActive);
+            if (!isActive) helpPanel.transform.SetAsLastSibling();
         }
     }
 
-    public void OnReplayClicked()
-    {
-        Debug.Log("Replay button pressed: Replaying doctor audio...");
-    }
-
-    public void OnSlowClicked()
-    {
-        Debug.Log("Slow button pressed: Playing audio slowly...");
-    }
-
-    public void OnHintClicked()
-    {
-        Debug.Log("Hint button pressed: Showing vocabulary hint...");
-    }
+    public void OnReplayClicked() { Debug.Log("Replay pressed"); }
+    public void OnSlowClicked() { Debug.Log("Slow pressed"); }
+    public void OnHintClicked() { Debug.Log("Hint pressed"); }
 
     public void OnConfirmClicked()
     {
-        Debug.Log("Confirm button pressed: Submitting response and moving to results...");
+        Debug.Log("Confirm button pressed: Moving to results...");
 
+        
         if (helpPanel != null) helpPanel.SetActive(false);
 
         
@@ -127,13 +111,7 @@ public class DoctorDialogueUI : MonoBehaviour
         {
             nextScreenCanvas.SetActive(true);
         }
-        else
-        {
-            Debug.LogError("Error: Next Screen Canvas (Screen7_ResultPanel) is NOT assigned!");
-            return;
-        }
 
-        
         if (currentScreenCanvas != null)
         {
             currentScreenCanvas.SetActive(false);

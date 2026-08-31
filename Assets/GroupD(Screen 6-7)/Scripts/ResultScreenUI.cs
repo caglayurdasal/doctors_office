@@ -7,79 +7,131 @@ public class ResultScreenUI : MonoBehaviour
     [Header("1. Result Summary UI")]
     public TMP_Text sentencesPracticedText;
     public TMP_Text averageScoreText;
+    public TMP_Text bestScoreText;
     public TMP_Text bestSentenceText;
-    public TMP_Text needsWorkText;
+    public TMP_Text needsWorkCountText;
+    public TMP_Text needsWorkDetailText;
 
-    [Header("2. Screen 7 Action Buttons")]
+    [Header("2. Progress Bar Settings")]
+    public TMP_Text progressLevelText;
+    public TMP_Text progressPointsText;
+    public Slider progressBarSlider;
+
+    [Header("3. Screen 7 Action Buttons")]
     public Button practiceAgainButton;
     public Button detailedReportButton;
     public Button exitButton;
 
-    [Header("3. Help Options")]
+    [Header("4. Help Options")]
     public Button helpButton;
     public GameObject helpPanel;
 
-    [Header("4. Screen Navigation")]
-    public GameObject screen1Canvas;
-    public GameObject screen7Canvas;
+    [Header("5. Screen Navigation")]
+    public GameObject currentScreenCanvas;
+    public GameObject nextScreenCanvas;
 
-    void Start()
+    void OnEnable()
     {
-        AutoAssignReferences();
-
-        if (practiceAgainButton != null) practiceAgainButton.onClick.AddListener(OnPracticeAgainClicked);
-        if (detailedReportButton != null) detailedReportButton.onClick.AddListener(OnDetailedReportClicked);
-        if (exitButton != null) exitButton.onClick.AddListener(OnExitClicked);
-        if (helpButton != null) helpButton.onClick.AddListener(ToggleHelpPanel);
+        BindButtons();
     }
 
-    private void AutoAssignReferences()
+    private void BindButtons()
     {
-        if (practiceAgainButton == null) practiceAgainButton = GameObject.Find("Practice Again Box")?.GetComponent<Button>();
-        if (detailedReportButton == null) detailedReportButton = GameObject.Find("Detailed Report")?.GetComponent<Button>();
-        if (exitButton == null) exitButton = GameObject.Find("ExitButton")?.GetComponent<Button>();
+        helpButton = transform.Find("HelpButton")?.GetComponent<Button>();
 
-        if (helpButton == null) helpButton = GameObject.Find("HelpButton")?.GetComponent<Button>();
-        if (helpPanel == null) helpPanel = GameObject.Find("HelpPanel");
-
-        if (screen7Canvas == null)
+        if (helpButton != null)
         {
-            screen7Canvas = GameObject.Find("Screen7_ResultPanel");
-            if (screen7Canvas == null) screen7Canvas = this.gameObject;
+            helpButton.onClick.RemoveAllListeners();
+            helpButton.onClick.AddListener(ToggleHelpPanel);
         }
 
-        if (screen1Canvas == null)
+        if (practiceAgainButton != null)
         {
-            
-            Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
-            foreach (Transform t in allTransforms)
+            practiceAgainButton.onClick.RemoveAllListeners();
+            practiceAgainButton.onClick.AddListener(OnPracticeAgainClicked);
+        }
+
+        if (detailedReportButton != null)
+        {
+            detailedReportButton.onClick.RemoveAllListeners();
+            detailedReportButton.onClick.AddListener(OnDetailedReportClicked);
+        }
+
+        if (exitButton != null)
+        {
+            exitButton.onClick.RemoveAllListeners();
+            exitButton.onClick.AddListener(OnExitClicked);
+        }
+
+        UpdateResultsUI(5, 90, 95, "Ich habe Kopfschmerzen", 1, "Fieber");
+    }
+
+    private GameObject FindMainPanel()
+    {
+        if (helpPanel != null) return helpPanel;
+
+        Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+        foreach (Transform t in allTransforms)
+        {
+            if (t.name == "MainPanel" && t.hideFlags == HideFlags.None)
             {
-                if (t.name == "Screen1_WelcomePanel")
-                {
-                    screen1Canvas = t.gameObject;
-                    break;
-                }
+                helpPanel = t.gameObject;
+                return helpPanel;
             }
         }
+        return null;
     }
 
     public void ToggleHelpPanel()
     {
-        if (helpPanel != null)
+        GameObject targetPanel = FindMainPanel();
+
+        if (targetPanel != null)
         {
-            helpPanel.SetActive(!helpPanel.activeSelf);
+            targetPanel.SetActive(true);
+            targetPanel.transform.SetAsLastSibling();
+
+            Debug.Log("Screen 7: Help Panel Forced ACTIVE!");
         }
+        else
+        {
+            Debug.LogError("Screen 7 Error: MainPanel object was not found in the scene!");
+        }
+    }
+
+    public void UpdateResultsUI(int sentencesPracticed, int averageScore, int bestScore, string bestSentence, int needsWorkCount, string needsWorkWord)
+    {
+        if (sentencesPracticedText != null) sentencesPracticedText.text = sentencesPracticed.ToString();
+        if (averageScoreText != null) averageScoreText.text = averageScore.ToString() + "/100";
+        if (bestScoreText != null) bestScoreText.text = bestScore.ToString();
+        if (bestSentenceText != null) bestSentenceText.text = "Best: " + bestSentence;
+        if (needsWorkCountText != null) needsWorkCountText.text = needsWorkCount.ToString();
+        if (needsWorkDetailText != null) needsWorkDetailText.text = "Needs work: " + needsWorkWord + "...";
+
+        UpdateProgressData(averageScore);
+    }
+
+    private void UpdateProgressData(int avgScore)
+    {
+        string level = "A2";
+        int ptsGained = 0;
+
+        if (avgScore >= 85) { level = "B1"; ptsGained = (avgScore - 80) / 2; }
+        else if (avgScore >= 50) { level = "A2"; ptsGained = (avgScore - 50) / 5; }
+        else { level = "A1"; ptsGained = (avgScore - 50) / 5; }
+
+        if (progressLevelText != null) progressLevelText.text = level + " FORTSCHRITT...";
+        if (progressPointsText != null) progressPointsText.text = (ptsGained >= 0 ? "+" : "") + ptsGained + " pts since last session";
+        if (progressBarSlider != null) progressBarSlider.value = Mathf.Clamp01(avgScore / 100f);
     }
 
     public void OnPracticeAgainClicked()
     {
-        Debug.Log("Practice Again clicked: Going back to Screen 1...");
+        GameObject targetPanel = FindMainPanel();
+        if (targetPanel != null) targetPanel.SetActive(false);
 
-        if (screen7Canvas != null)
-            screen7Canvas.SetActive(false);
-
-        if (screen1Canvas != null)
-            screen1Canvas.SetActive(true);
+        if (nextScreenCanvas != null) nextScreenCanvas.SetActive(true);
+        if (currentScreenCanvas != null) currentScreenCanvas.SetActive(false);
     }
 
     public void OnDetailedReportClicked()
@@ -89,18 +141,12 @@ public class ResultScreenUI : MonoBehaviour
 
     public void OnExitClicked()
     {
-        Debug.Log("Exiting Application...");
+        GameObject targetPanel = FindMainPanel();
+        if (targetPanel != null) targetPanel.SetActive(false);
 
-        
-        if (screen7Canvas != null)
-        {
-            screen7Canvas.SetActive(false);
-        }
+        if (currentScreenCanvas != null) currentScreenCanvas.SetActive(false);
 
-        
         Application.Quit();
-
-        
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #endif
